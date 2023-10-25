@@ -21,13 +21,13 @@ const createOrder = asyncHandler(async(req, res) => {
     }else{
         const product = await Product.findOne({_id: product_id});
         const totalPrice = product.price * quantity;
-        const createdOrder = Order.create({
+        const createdOrder = await Order.create({
             customer_id,
             totalPrice,
             order_items : [{quantity, product_id}],
         })
         if(createdOrder){
-            res.status.json("New Order Created")
+            res.status(201).json("New Order Created")
         }else{
             res.status(400);
             throw new Error("Error while creating")
@@ -37,7 +37,7 @@ const createOrder = asyncHandler(async(req, res) => {
 
 const removeOrderByProductId = asyncHandler(async(req, res) => {
     const {product_id, customer_id} = req.body;
-    const order = Order.findOne({customer_id});
+    const order = await Order.findOne({customer_id});
     if(order){
         const order_items = order.order_items;
         const updatedOrderItems = order_items.filter((eachOrder) => eachOrder.order_items.product != product_id);
@@ -61,8 +61,38 @@ const deleteOrder = asyncHandler(async(req, res) => {
     }
 })
 
+const getAverage = asyncHandler(async(req, res) => {
+    const result = await Order.aggregate([
+        {
+          $group: {
+            _id: null,
+            averageTotalPrice: { $avg: '$totalPrice' },
+          },
+        },
+      ]);
+    if(result){
+        if(result.length > 0){
+            res.json(`Average Price is ${result[0].averageTotalPrice}`);
+        }
+    }else{
+        throw new Error("Error while generating the average");
+    }
+});
+
+
+// const getMax = asyncHandler(async(req, res) => {
+//     const result = await Order.aggregate([
+//         {
+//             $group:{
+//                 _id : "$order_items.product",
+//             }
+//         }
+//     ])
+// })
+
 export {
     removeOrderByProductId,
     deleteOrder,
     createOrder,
+    getAverage,
 }

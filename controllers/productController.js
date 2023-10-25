@@ -6,7 +6,9 @@ import Product from '../models/productModel.js';
 //no authentication is required 
 //filtering is required
 const getAllProducts = asyncHandler(async(req,res) => {
-    const products = await Product.find({});
+    const {category, name, rating} = req.body;
+    //pass rating 1 for the ascending order -1 for the descending order
+    const products = await Product.find({category, name}).sort({rating});
     if(products){
         res.json(products);
     }else{
@@ -45,7 +47,17 @@ const addProduct = asyncHandler(async(req, res) => {
         throw new Error("Rating of Product is required")
     }
 
-    const product = Product.create({
+    if(rating > 5 || rating < 1){
+        res.status(400);
+        throw new Error("Product Rating must be in between 1 to 5");
+    }
+
+    if(!isNaN(rating)){
+        res.status(400);
+        throw new Error("Rating must be Number");
+    }
+
+    const product = await Product.create({
         name, 
         price,
         description,
@@ -69,7 +81,7 @@ const deleteProduct = asyncHandler(async(req,res) => {
         res.json("Product Deleted Successfully");
     }else{
         res.status(400);
-        throw new Error("Invalid user id");
+        throw new Error("Error while deleting the product");
     }
 })
 
